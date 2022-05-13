@@ -18,6 +18,7 @@ contract xELONToken is ERC20, AccessControl {
      * @dev Constructor that gives minter role all of existing tokens.
      */
     constructor(address _stakingAddress) ERC20("xELON", "XELON") {
+        require(_stakingAddress != address(0x0), "Cannot set _stakingAddress to the zero address");
         stakingAddress = _stakingAddress;
         // Grant the contract deployer the default admin role: it will be able
         // to grant and revoke any roles
