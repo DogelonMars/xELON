@@ -93,6 +93,7 @@ contract xELONChef is Ownable {
         uint256 _startBlock,
         uint256 _bonusEndBlock
     ) public {
+        require(_startBlock < _bonusEndBlock, "_startBlock must come before _bonusEndBlock");
         xelonPerBlock = _xelonPerBlock;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
@@ -103,6 +104,7 @@ contract xELONChef is Ownable {
     }
 
     function setXelon(address _xelon) external onlyOwner {
+        require(_xelon != address(0x0), "Cannot set xElon to the zero address");
         xelon = xELONToken(_xelon);
     }
 
@@ -136,6 +138,7 @@ contract xELONChef is Ownable {
         uint256 _allocPoint,
         bool _withUpdate
     ) public onlyOwner {
+        require(_pid < poolInfo.length, "Specified _pid does not exist");
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -151,6 +154,8 @@ contract xELONChef is Ownable {
         view
         returns (uint256)
     {
+        require(_from < _to, "_from must come before _to");
+        require(_from > startBlock, "_from must come after startBlock");
         if (_to <= bonusEndBlock) {
             return (_to - _from) * BONUS_MULTIPLIER;
         } else if (_from >= bonusEndBlock) {
