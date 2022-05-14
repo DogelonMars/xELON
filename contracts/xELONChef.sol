@@ -5,6 +5,7 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./xELONToken.sol";
 import "hardhat/console.sol";
@@ -24,7 +25,7 @@ import "hardhat/console.sol";
 // xelon/weth
 
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract xELONChef is Ownable {
+contract xELONChef is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     // Info of each user.
     struct UserInfo {
@@ -211,7 +212,7 @@ contract xELONChef is Ownable {
     }
 
     // Deposit LP tokens to xELONChef for xELON allocation.
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -230,7 +231,7 @@ contract xELONChef is Ownable {
     }
 
     // Withdraw LP tokens from xELONChef.
-    function withdraw(uint256 _pid, uint256 _amount) public {
+    function withdraw(uint256 _pid, uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -262,5 +263,4 @@ contract xELONChef is Ownable {
             xelon.transfer(_to, _amount);
         }
     }
-
 }
