@@ -228,8 +228,8 @@ describe("xELONChef", function() {
             expect(await this.xelon.balanceOf(this.alice.address)).to.equal("11600");
             // Bob should have: 6190 + 10*1.5/6.5 * 1000 + 10*1.5/4.5*1000 = 11831
             expect(await this.xelon.balanceOf(this.bob.address)).to.equal("11831");
-            // Carol should have: 2*3/6*1000 + 10*3/7*1000 + 10*3/6.5*1000 + 10*3/4.5*1000 + 10*1000 = 26568
-            expect(await this.xelon.balanceOf(this.carol.address)).to.equal("26568");
+            // Carol should have: 2*3/6*1000 + 10*3/7*1000 + 10*3/6.5*1000 + 10*3/4.5*1000 + 10*1000 = 26567
+            expect(await this.xelon.balanceOf(this.carol.address)).to.equal("26567");
             expect(await this.xelon.totalSupply()).to.equal("50000");
             // All of them should have 1000 LPs back.
             expect(await this.lp.balanceOf(this.alice.address)).to.equal("1000");

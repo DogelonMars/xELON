@@ -158,7 +158,7 @@ contract xELONChef is Ownable {
             uint256 xelonReward = multiplier * xelonPerBlock * pool.allocPoint / totalAllocPoint;
             accXelonPerShare = accXelonPerShare + (xelonReward * 1e12 / lpSupply);
         }
-        return user.amount * accXelonPerShare / 1e12 - user.rewardDebt;
+        return (user.amount * accXelonPerShare - user.rewardDebt) / 1e12;
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -193,7 +193,7 @@ contract xELONChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = user.amount * pool.accXelonPerShare / 1e12 - user.rewardDebt;
+            uint256 pending = (user.amount * pool.accXelonPerShare - user.rewardDebt) / 1e12;
             safeXelonTransfer(msg.sender, pending);
         }
         pool.lpToken.safeTransferFrom(
@@ -202,7 +202,7 @@ contract xELONChef is Ownable {
             _amount
         );
         user.amount = user.amount + _amount;
-        user.rewardDebt = user.amount * pool.accXelonPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accXelonPerShare;
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -212,10 +212,10 @@ contract xELONChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount * pool.accXelonPerShare / 1e12 - user.rewardDebt;
+        uint256 pending = (user.amount * pool.accXelonPerShare - user.rewardDebt) / 1e12;
         safeXelonTransfer(msg.sender, pending);
         user.amount = user.amount - _amount;
-        user.rewardDebt = user.amount * pool.accXelonPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accXelonPerShare;
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
