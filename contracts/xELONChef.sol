@@ -72,6 +72,21 @@ contract xELONChef is Ownable {
         uint256 indexed pid,
         uint256 amount
     );
+    event PoolAdded(address indexed tokenAddress, address indexed addedBy);
+    event PoolSet(
+        uint256 indexed pid,
+        address indexed updater,
+        uint256 totalAllocPointsBefore,
+        uint256 poolAllocPointsBefore,
+        uint256 poolAllocPointsAfter
+    );
+    event PoolUpdated(
+        uint256 indexed pid,
+        uint256 multiplier,
+        uint256 xelonReward,
+        uint256 accXelonPerShareBefore,
+        uint256 lpSupply
+    );
 
     constructor(
         uint256 _xelonPerBlock,
@@ -98,6 +113,7 @@ contract xELONChef is Ownable {
         IERC20 _lpToken,
         bool _withUpdate
     ) public onlyOwner {
+        emit PoolAdded(address(_lpToken), msg.sender);
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -123,8 +139,9 @@ contract xELONChef is Ownable {
         if (_withUpdate) {
             massUpdatePools();
         }
-        
-        totalAllocPoint = totalAllocPoint - poolInfo[_pid].allocPoint + _allocPoint;
+        uint256 poolAllocPoints = poolInfo[_pid].allocPoint;
+        emit PoolSet(_pid, msg.sender, totalAllocPoint, poolAllocPoints, _allocPoint);
+        totalAllocPoint = totalAllocPoint - poolAllocPoints + _allocPoint;
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
@@ -183,6 +200,7 @@ contract xELONChef is Ownable {
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 xelonReward = multiplier * xelonPerBlock * pool.allocPoint / totalAllocPoint;
         xelon.mint(address(this), xelonReward);
+        emit PoolUpdated(_pid, multiplier, xelonReward, pool.accXelonPerShare, lpSupply);
         pool.accXelonPerShare = pool.accXelonPerShare + (xelonReward * 1e12 / lpSupply);
         pool.lastRewardBlock = block.number;
     }
