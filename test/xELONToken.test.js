@@ -8,7 +8,7 @@ describe("xELONToken", function () {
   })
 
   beforeEach(async function () {
-    this.xelon = await this.xELONToken.deploy('0x0000000000000000000000000000000000000000');
+    this.xelon = await this.xELONToken.deploy('0x0000000000000000000000000000000000000001');
     await this.xelon.deployed();
   })
 

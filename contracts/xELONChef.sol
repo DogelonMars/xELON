@@ -56,8 +56,6 @@ contract xELONChef is Ownable, ReentrancyGuard {
     uint256 public bonusEndBlock;
     // xELON tokens created per block.
     uint256 public xelonPerBlock;
-    // Bonus muliplier for early xelon makers.
-    uint256 public constant BONUS_MULTIPLIER = 10;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -91,12 +89,9 @@ contract xELONChef is Ownable, ReentrancyGuard {
 
     constructor(
         uint256 _xelonPerBlock,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
+        uint256 _startBlock
     ) public {
-        require(_startBlock < _bonusEndBlock, "_startBlock must come before _bonusEndBlock");
         xelonPerBlock = _xelonPerBlock;
-        bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
     }
 
@@ -156,14 +151,8 @@ contract xELONChef is Ownable, ReentrancyGuard {
         returns (uint256)
     {
         require(_from < _to, "_from must come before _to");
-        require(_from > startBlock, "_from must come after startBlock");
-        if (_to <= bonusEndBlock) {
-            return (_to - _from) * BONUS_MULTIPLIER;
-        } else if (_from >= bonusEndBlock) {
-            return (_to - _from);
-        } else {
-            return (bonusEndBlock - _from) * BONUS_MULTIPLIER + (_to - bonusEndBlock);
-         }
+        require(_from >= startBlock, "_from must come after startBlock");
+        return (_to - _from);
     }
 
     // View function to see pending xELONs on frontend.
@@ -213,6 +202,7 @@ contract xELONChef is Ownable, ReentrancyGuard {
 
     // Deposit LP tokens to xELONChef for xELON allocation.
     function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
+        require(block.number >= startBlock, "Cannot deposit before startBlock");
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
