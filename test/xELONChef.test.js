@@ -1,6 +1,6 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
-const { time } = require("./utilities");
+const { time, deployTo} = require("./utilities");
 
 describe("xELONChef", function() {
     const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -12,6 +12,7 @@ describe("xELONChef", function() {
         this.xELONChef = await ethers.getContractFactory("xELONChef");
         this.xELONToken = await ethers.getContractFactory("xELONToken");
         this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter);
+        this.elonTokenAddress = "0x761D38e5ddf6ccf6Cf7c55759d5210750B5D60F3"
     });
 
     it("should set correct state variables", async function() {
@@ -38,23 +39,15 @@ describe("xELONChef", function() {
 
     context("With ERC/LP token added to the field", function() {
         beforeEach(async function() {
-            // create mock LP token
-            this.lp = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000");
-            
-            // distribute lp tokens
-            await this.lp.transfer(this.owner.address, "1000");
-            await this.lp.transfer(this.alice.address, "1000");
-            await this.lp.transfer(this.bob.address, "1000");
-            await this.lp.transfer(this.carol.address, "1000");
-    
-            // create 2nd mock LP token
-            this.lp2 = await this.ERC20Mock.deploy("LPToken2", "LP2", "10000000000");
-            
-            // distribute lp2 tokens
-            await this.lp.transfer(this.owner.address, "1000");
-            await this.lp2.transfer(this.alice.address, "1000");
-            await this.lp2.transfer(this.bob.address, "1000");
-            await this.lp2.transfer(this.carol.address, "1000");
+            // deploy mock token to live ELON token address, use as lp
+            await deployTo("ERC20Mock", this.elonTokenAddress, "LPToken", "LP", "10000000000")
+            this.lp = await ethers.getContractAt("ERC20Mock", this.elonTokenAddress)
+
+            // set balances
+            await this.lp.setBalance(this.owner.address, "1000");
+            await this.lp.setBalance(this.alice.address, "1000");
+            await this.lp.setBalance(this.bob.address, "1000");
+            await this.lp.setBalance(this.carol.address, "1000");
         });
 
         it("should allow emergency withdraw", async function() {
@@ -251,7 +244,7 @@ describe("xELONChef", function() {
             // set chef as xelon minter
             await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
             await this.lp.connect(this.alice).approve(this.chef.address, "1000");
-            await this.lp2.connect(this.bob).approve(this.chef.address, "1000");
+            await this.lp.connect(this.bob).approve(this.chef.address, "5");
             // Add first LP to the pool with allocation 1
             await this.chef.add("10", this.lp.address, true);
             // Alice deposits 10 LPs at block 410
@@ -259,18 +252,16 @@ describe("xELONChef", function() {
             await this.chef.connect(this.alice).deposit(0, "10");
             // Add LP2 to the pool with allocation 2 at block 420
             await time.advanceBlockTo("419");
-            await this.chef.add("20", this.lp2.address, true);
+            // triple rewards
+            await this.chef.set(0, "30", true);
             // Alice should have 10*1000 pending reward
             expect(await this.chef.pendingXelon(0, this.alice.address)).to.equal("1000");
             // Bob deposits 10 LP2s at block 425
             await time.advanceBlockTo("424");
-            await this.chef.connect(this.bob).deposit(1, "5");
-            // Alice should have 10000 + 5*1/3*1000 = 11666 pending reward
-            expect(await this.chef.pendingXelon(0, this.alice.address)).to.equal("1166");
+            await this.chef.connect(this.bob).deposit(0, "5");
+            expect(await this.chef.pendingXelon(0, this.alice.address)).to.equal("1500");
             await time.advanceBlockTo("430");
-            // At block 430. Bob should get 5*2/3*1000 = 3333. Alice should get ~1666 more.
-            expect(await this.chef.pendingXelon(0, this.alice.address)).to.equal("1333");
-            expect(await this.chef.pendingXelon(1, this.bob.address)).to.equal("333");
+            expect(await this.chef.pendingXelon(0, this.alice.address)).to.equal("1833");
         });
 
         it("should return the correct number of pools", async function() {
@@ -291,13 +282,6 @@ describe("xELONChef", function() {
 
             // pool length should be 1
             expect(await this.chef.poolLength()).to.equal("1");
-
-            // create lp2 pool
-            await this.chef.add("100", this.lp2.address, true);
-
-            // pool length should be 2
-            expect(await this.chef.poolLength()).to.equal("2");
-
         });
 
         it("should add/update/track the pools allocation points", async function() {
@@ -319,30 +303,11 @@ describe("xELONChef", function() {
             // totalAllocPoint should be 100
             expect(await this.chef.totalAllocPoint()).to.equal("100");
 
-            // create lp2 pool
-            await this.chef.add("100", this.lp2.address, true);
-
-            // totalAllocPoint should be 200
-            expect(await this.chef.totalAllocPoint()).to.equal("200");
-
             // update lp pool alloc amount
             await this.chef.set(0, "1000", true);
 
-            // totalAllocPoint should be 1100
-            expect(await this.chef.totalAllocPoint()).to.equal("1100");
-
-            // update lp2 pool alloc amount
-            await this.chef.set(1, "2000", true);
-
-            // totalAllocPoint should be 3000
-            expect(await this.chef.totalAllocPoint()).to.equal("3000");
-
-            // check pool 0
-            expect((await this.chef.poolInfo(0)).allocPoint).to.equal("1000");
-
-            // check pool 1
-            expect((await this.chef.poolInfo(1)).allocPoint).to.equal("2000");
+            // totalAllocPoint should be 1000
+            expect(await this.chef.totalAllocPoint()).to.equal("1000");
         });
-
     });
 });

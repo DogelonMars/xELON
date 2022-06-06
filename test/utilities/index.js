@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat")
+const { ethers, network } = require("hardhat")
 const { BigNumber } = require("ethers")
 
 const BASE_TEN = 10
@@ -49,6 +49,19 @@ function getBigNumber(amount, decimals = 18) {
   return BigNumber.from(amount).mul(BigNumber.from(BASE_TEN).pow(decimals))
 }
 
+async function deployTo(contractName, address, ...args) {
+  const Contract = await ethers.getContractFactory(contractName)
+  const tempContract = await Contract.deploy(...args)
+  await tempContract.deployed()
+  const bytecode = await network.provider.send("eth_getCode", [tempContract.address]);
+  await network.provider.send("hardhat_setCode", [
+    address,
+    bytecode,
+  ]);
+}
+
+
+
 module.exports = {
   encodeParameters,
   prepare,
@@ -57,4 +70,5 @@ module.exports = {
   getBigNumber,
   time: require("./time"),
   ADDRESS_ZERO,
+  deployTo,
 }

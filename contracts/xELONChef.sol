@@ -52,6 +52,8 @@ contract xELONChef is Ownable, ReentrancyGuard {
     }
     // The xELON TOKEN!
     xELONToken public xelon;
+    // Dogelon Mars token address
+    address public constant DOGELON = 0x761D38e5ddf6ccf6Cf7c55759d5210750B5D60F3;
     // Block number when bonus xELON period ends.
     uint256 public bonusEndBlock;
     // xELON tokens created per block.
@@ -60,7 +62,7 @@ contract xELONChef is Ownable, ReentrancyGuard {
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
+    // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when xELON mining starts.
     uint256 public startBlock;
@@ -110,7 +112,8 @@ contract xELONChef is Ownable, ReentrancyGuard {
         uint256 _allocPoint,
         IERC20 _lpToken,
         bool _withUpdate
-    ) public onlyOwner {
+    ) public onlyOwner nonReentrant {
+        require(address(_lpToken) == DOGELON && poolInfo.length == 0, "Can only add Dogelon as a pool once!");
         emit PoolAdded(address(_lpToken), msg.sender);
         if (_withUpdate) {
             massUpdatePools();
@@ -133,7 +136,7 @@ contract xELONChef is Ownable, ReentrancyGuard {
         uint256 _pid,
         uint256 _allocPoint,
         bool _withUpdate
-    ) public onlyOwner {
+    ) public onlyOwner nonReentrant {
         require(_pid < poolInfo.length, "Specified _pid does not exist");
         if (_withUpdate) {
             massUpdatePools();
@@ -177,12 +180,12 @@ contract xELONChef is Ownable, ReentrancyGuard {
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+            _updatePool(pid);
         }
     }
 
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
+    function _updatePool(uint256 _pid) internal {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -200,21 +203,25 @@ contract xELONChef is Ownable, ReentrancyGuard {
         pool.lastRewardBlock = block.number;
     }
 
+    function updatePool(uint256 _pid) public nonReentrant {
+        return _updatePool(_pid);
+    }
+
     // Deposit LP tokens to xELONChef for xELON allocation.
     function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
         require(block.number >= startBlock, "Cannot deposit before startBlock");
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
-        if (user.amount > 0) {
-            uint256 pending = (user.amount * pool.accXelonPerShare - user.rewardDebt) / 1e12;
-            safeXelonTransfer(msg.sender, pending);
-        }
+        _updatePool(_pid);
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
             address(this),
             _amount
         );
+        if (user.amount > 0) {
+            uint256 pending = (user.amount * pool.accXelonPerShare - user.rewardDebt) / 1e12;
+            safeXelonTransfer(msg.sender, pending);
+        }
         user.amount = user.amount + _amount;
         user.rewardDebt = user.amount * pool.accXelonPerShare;
         emit Deposit(msg.sender, _pid, _amount);
@@ -225,11 +232,11 @@ contract xELONChef is Ownable, ReentrancyGuard {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
-        updatePool(_pid);
+        _updatePool(_pid);
         uint256 pending = (user.amount * pool.accXelonPerShare - user.rewardDebt) / 1e12;
-        safeXelonTransfer(msg.sender, pending);
         user.amount = user.amount - _amount;
         user.rewardDebt = user.amount * pool.accXelonPerShare;
+        safeXelonTransfer(msg.sender, pending);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
@@ -238,10 +245,11 @@ contract xELONChef is Ownable, ReentrancyGuard {
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        uint256 originalAmount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+        pool.lpToken.safeTransfer(address(msg.sender), originalAmount);
+        emit EmergencyWithdraw(msg.sender, _pid, originalAmount);
     }
 
     // Safe xelon transfer function, just in case if rounding error causes pool to not have enough xELONs.
