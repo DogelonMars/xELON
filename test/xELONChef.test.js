@@ -293,7 +293,7 @@ describe("xELONChef", function() {
             await this.xelon.deployed();
 
             await this.chef.setXelon(this.xelon.address);
-            
+
             // totalAllocPoint should be 0
             expect(await this.chef.totalAllocPoint()).to.equal("0");
 
@@ -308,6 +308,69 @@ describe("xELONChef", function() {
 
             // totalAllocPoint should be 1000
             expect(await this.chef.totalAllocPoint()).to.equal("1000");
+        });
+
+        it("[H-01] should allow multiple LP tokens to be added (DOGELON first, then others)", async function() {
+            // 100 per block farming rate starting at block 100
+            this.chef = await this.xELONChef.deploy("100", "100");
+            await this.chef.deployed();
+
+            this.xelon = await this.xELONToken.deploy(this.chef.address);
+            await this.xelon.deployed();
+
+            await this.chef.setXelon(this.xelon.address);
+
+            // Create a second LP token (simulating ELON/ETH pair)
+            this.lp2 = await this.ERC20Mock.deploy("LP2Token", "LP2", "10000000000");
+            await this.lp2.deployed();
+
+            // Should succeed: Add DOGELON as first pool
+            await this.chef.add("100", this.lp.address, true);
+            expect(await this.chef.poolLength()).to.equal("1");
+            expect(await this.chef.totalAllocPoint()).to.equal("100");
+
+            // Should succeed: Add another LP token after DOGELON
+            await this.chef.add("200", this.lp2.address, true);
+            expect(await this.chef.poolLength()).to.equal("2");
+            expect(await this.chef.totalAllocPoint()).to.equal("300");
+
+            // Verify pool 0 is DOGELON
+            const pool0 = await this.chef.poolInfo(0);
+            expect(pool0.lpToken).to.equal(this.lp.address);
+            expect(pool0.allocPoint).to.equal("100");
+
+            // Verify pool 1 is the second LP
+            const pool1 = await this.chef.poolInfo(1);
+            expect(pool1.lpToken).to.equal(this.lp2.address);
+            expect(pool1.allocPoint).to.equal("200");
+        });
+
+        it("[H-01] should enforce DOGELON as first pool only", async function() {
+            // 100 per block farming rate starting at block 100
+            this.chef = await this.xELONChef.deploy("100", "100");
+            await this.chef.deployed();
+
+            this.xelon = await this.xELONToken.deploy(this.chef.address);
+            await this.xelon.deployed();
+
+            await this.chef.setXelon(this.xelon.address);
+
+            // Create another LP token
+            this.lp2 = await this.ERC20Mock.deploy("LP2Token", "LP2", "10000000000");
+            await this.lp2.deployed();
+
+            // Should fail: Cannot add non-DOGELON as first pool
+            await expect(
+                this.chef.add("100", this.lp2.address, true)
+            ).to.be.revertedWith("Can only add Dogelon as a pool once!");
+
+            // Add DOGELON first (should succeed)
+            await this.chef.add("100", this.lp.address, true);
+
+            // Should fail: Cannot add DOGELON twice
+            await expect(
+                this.chef.add("100", this.lp.address, true)
+            ).to.be.revertedWith("Can only add Dogelon as a pool once!");
         });
     });
 });

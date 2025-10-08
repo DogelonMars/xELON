@@ -113,7 +113,7 @@ contract xELONChef is Ownable, ReentrancyGuard {
         IERC20 _lpToken,
         bool _withUpdate
     ) public onlyOwner nonReentrant {
-        require(address(_lpToken) == DOGELON && poolInfo.length == 0, "Can only add Dogelon as a pool once!");
+        require((address(_lpToken) == DOGELON && poolInfo.length == 0) || (address(_lpToken) != DOGELON && poolInfo.length != 0), "Can only add Dogelon as a pool once!");
         emit PoolAdded(address(_lpToken), msg.sender);
         if (_withUpdate) {
             massUpdatePools();
