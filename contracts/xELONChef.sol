@@ -54,8 +54,6 @@ contract xELONChef is Ownable, ReentrancyGuard {
     xELONToken public xelon;
     // Dogelon Mars token address
     address public constant DOGELON = 0x761D38e5ddf6ccf6Cf7c55759d5210750B5D60F3;
-    // Block number when bonus xELON period ends.
-    uint256 public bonusEndBlock;
     // xELON tokens created per block.
     uint256 public xelonPerBlock;
     // Info of each pool.
