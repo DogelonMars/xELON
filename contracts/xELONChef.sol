@@ -171,7 +171,10 @@ contract xELONChef is Ownable, ReentrancyGuard {
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
             uint256 xelonReward = multiplier * xelonPerBlock * pool.allocPoint / totalAllocPoint;
-            accXelonPerShare = accXelonPerShare + (xelonReward * 1e12 / lpSupply);
+            uint256 accXelonIncrease = xelonReward * 1e12 / lpSupply;
+            if (accXelonIncrease > 0) {
+                accXelonPerShare = accXelonPerShare + accXelonIncrease;
+            }
         }
         return (user.amount * accXelonPerShare - user.rewardDebt) / 1e12;
     }
@@ -197,9 +200,15 @@ contract xELONChef is Ownable, ReentrancyGuard {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 xelonReward = multiplier * xelonPerBlock * pool.allocPoint / totalAllocPoint;
-        xelon.mint(address(this), xelonReward);
-        emit PoolUpdated(_pid, multiplier, xelonReward, pool.accXelonPerShare, lpSupply);
-        pool.accXelonPerShare = pool.accXelonPerShare + (xelonReward * 1e12 / lpSupply);
+        uint256 accXelonIncrease = xelonReward * 1e12 / lpSupply;
+
+        // Only mint and update if the per-share increment is non-zero
+        if (accXelonIncrease > 0) {
+            xelon.mint(address(this), xelonReward);
+            emit PoolUpdated(_pid, multiplier, xelonReward, pool.accXelonPerShare, lpSupply);
+            pool.accXelonPerShare = pool.accXelonPerShare + accXelonIncrease;
+        }
+
         pool.lastRewardBlock = block.number;
     }
 

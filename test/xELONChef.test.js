@@ -372,5 +372,56 @@ describe("xELONChef", function() {
                 this.chef.add("100", this.lp.address, true)
             ).to.be.revertedWith("Can only add Dogelon as a pool once!");
         });
+
+        it("[M-01] should prevent reward precision loss by not minting when increment is zero", async function() {
+            // Very small reward rate: 1 wei per block
+            this.chef = await this.xELONChef.deploy("1", "500");
+            await this.chef.deployed();
+
+            this.xelon = await this.xELONToken.deploy(this.chef.address);
+            await this.xelon.deployed();
+
+            await this.chef.setXelon(this.xelon.address);
+
+            // Set chef as xelon minter
+            await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
+
+            // Create pool
+            await this.chef.add("100", this.lp.address, true);
+
+            // Give Alice enough LP tokens
+            await this.lp.setBalance(this.alice.address, "1000000000000000000000"); // 1000 tokens
+
+            // Alice deposits a very large amount to trigger precision loss
+            // 1e18 = 1 token with 18 decimals
+            await this.lp.connect(this.alice).approve(this.chef.address, "1000000000000000000000");
+            await time.advanceBlockTo("509");
+            await this.chef.connect(this.alice).deposit(0, "1000000000000000000000"); // 1000 tokens, block 510
+
+            // Record initial state
+            const xelonBalanceBefore = await this.xelon.balanceOf(this.chef.address);
+            const poolBefore = await this.chef.poolInfo(0);
+
+            // Advance 1 block - this would mint 1 wei reward
+            // xelonReward = 1 * 1 * 100 / 100 = 1 wei
+            // accXelonIncrease = 1 * 1e12 / 1000e18 = 1e12 / 1e21 = 0 (rounds down!)
+            await time.advanceBlockTo("510");
+            await this.chef.updatePool(0); // block 511
+
+            const xelonBalanceAfter = await this.xelon.balanceOf(this.chef.address);
+            const poolAfter = await this.chef.poolInfo(0);
+
+            // Before fix: tokens would be minted but accXelonPerShare wouldn't increase
+            // After fix: tokens should NOT be minted when increment is 0
+
+            // Verify no tokens were minted (fix working)
+            expect(xelonBalanceAfter).to.equal(xelonBalanceBefore);
+
+            // Verify accXelonPerShare didn't change
+            expect(poolAfter.accXelonPerShare).to.equal(poolBefore.accXelonPerShare);
+
+            // Verify lastRewardBlock still updated (important!)
+            expect(poolAfter.lastRewardBlock).to.be.gt(poolBefore.lastRewardBlock);
+        });
     });
 });
