@@ -223,7 +223,6 @@ describe("xELONChef", function() {
             // Bob should have: 6190 + 10*1.5/6.5 * 1000 + 10*1.5/4.5*1000 = 11831
             expect(await this.xelon.balanceOf(this.bob.address)).to.equal("1183");
             // Carol should have: 2*3/6*1000 + 10*3/7*1000 + 10*3/6.5*1000 + 10*3/4.5*1000 + 10*1000 = 26567
-            // After L-09 fix: Carol receives 2657 (1 wei more due to corrected rounding)
             expect(await this.xelon.balanceOf(this.carol.address)).to.equal("2657");
             expect(await this.xelon.totalSupply()).to.equal("5000");
             // All of them should have 1000 LPs back.
@@ -412,10 +411,7 @@ describe("xELONChef", function() {
             const xelonBalanceAfter = await this.xelon.balanceOf(this.chef.address);
             const poolAfter = await this.chef.poolInfo(0);
 
-            // Before fix: tokens would be minted but accXelonPerShare wouldn't increase
-            // After fix: tokens should NOT be minted when increment is 0
-
-            // Verify no tokens were minted (fix working)
+            // When increment rounds to zero, no tokens should be minted
             expect(xelonBalanceAfter).to.equal(xelonBalanceBefore);
 
             // Verify accXelonPerShare didn't change
@@ -467,8 +463,7 @@ describe("xELONChef", function() {
 
             const aliceBalance = await this.xelon.balanceOf(this.alice.address);
 
-            // Before fix: Alice would get ~500-600 (all blocks calculated with wrong allocation)
-            // After fix: Alice gets 1050 (past blocks at 100%, current block at 50%)
+            // Alice receives 1050: 1000 from blocks at 100% allocation + 50 from block at 50% allocation
             expect(aliceBalance).to.equal("1050");
         });
     });
