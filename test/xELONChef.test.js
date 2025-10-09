@@ -61,7 +61,7 @@ describe("xELONChef", function() {
             await this.chef.setXelon(this.xelon.address);
             
             // create lp pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
 
             // bob approves 1000 lp for chef
             await this.lp.connect(this.bob).approve(this.chef.address, "1000");
@@ -94,7 +94,7 @@ describe("xELONChef", function() {
             await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
 
             // create lp pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
 
             // bob approves chef for 1000 lp, deposits 100 lp, block advanced to 89
             await this.lp.connect(this.bob).approve(this.chef.address, "1000");
@@ -142,7 +142,7 @@ describe("xELONChef", function() {
             // set chef as xelon minter
             await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
             // create lp pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
             // bob approve chef with 1000 lp
             await this.lp.connect(this.bob).approve(this.chef.address, "1000");
             await time.advanceBlockTo("199");
@@ -177,7 +177,7 @@ describe("xELONChef", function() {
             // set chef as xelon minter
             await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
             // create lp pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
             await this.lp.connect(this.alice).approve(this.chef.address, "1000");
             await this.lp.connect(this.bob).approve(this.chef.address, "1000");
             await this.lp.connect(this.carol).approve(this.chef.address, "1000");
@@ -247,14 +247,14 @@ describe("xELONChef", function() {
             await this.lp.connect(this.alice).approve(this.chef.address, "1000");
             await this.lp.connect(this.bob).approve(this.chef.address, "5");
             // Add first LP to the pool with allocation 1
-            await this.chef.add("10", this.lp.address, true);
+            await this.chef.add("10", this.lp.address);
             // Alice deposits 10 LPs at block 410
             await time.advanceBlockTo("409");
             await this.chef.connect(this.alice).deposit(0, "10");
             // Add LP2 to the pool with allocation 2 at block 420
             await time.advanceBlockTo("419");
             // triple rewards
-            await this.chef.set(0, "30", true);
+            await this.chef.set(0, "30");
             // Alice should have 10*1000 pending reward
             expect(await this.chef.pendingXelon(0, this.alice.address)).to.equal("1000");
             // Bob deposits 10 LP2s at block 425
@@ -279,7 +279,7 @@ describe("xELONChef", function() {
             expect(await this.chef.poolLength()).to.equal("0");
 
             // create lp pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
 
             // pool length should be 1
             expect(await this.chef.poolLength()).to.equal("1");
@@ -299,13 +299,13 @@ describe("xELONChef", function() {
             expect(await this.chef.totalAllocPoint()).to.equal("0");
 
             // create lp pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
 
             // totalAllocPoint should be 100
             expect(await this.chef.totalAllocPoint()).to.equal("100");
 
             // update lp pool alloc amount
-            await this.chef.set(0, "1000", true);
+            await this.chef.set(0, "1000");
 
             // totalAllocPoint should be 1000
             expect(await this.chef.totalAllocPoint()).to.equal("1000");
@@ -326,12 +326,12 @@ describe("xELONChef", function() {
             await this.lp2.deployed();
 
             // Should succeed: Add DOGELON as first pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
             expect(await this.chef.poolLength()).to.equal("1");
             expect(await this.chef.totalAllocPoint()).to.equal("100");
 
             // Should succeed: Add another LP token after DOGELON
-            await this.chef.add("200", this.lp2.address, true);
+            await this.chef.add("200", this.lp2.address);
             expect(await this.chef.poolLength()).to.equal("2");
             expect(await this.chef.totalAllocPoint()).to.equal("300");
 
@@ -362,15 +362,15 @@ describe("xELONChef", function() {
 
             // Should fail: Cannot add non-DOGELON as first pool
             await expect(
-                this.chef.add("100", this.lp2.address, true)
+                this.chef.add("100", this.lp2.address)
             ).to.be.revertedWith("Can only add Dogelon as a pool once!");
 
             // Add DOGELON first (should succeed)
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
 
             // Should fail: Cannot add DOGELON twice
             await expect(
-                this.chef.add("100", this.lp.address, true)
+                this.chef.add("100", this.lp.address)
             ).to.be.revertedWith("Can only add Dogelon as a pool once!");
         });
 
@@ -388,7 +388,7 @@ describe("xELONChef", function() {
             await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
 
             // Create pool
-            await this.chef.add("100", this.lp.address, true);
+            await this.chef.add("100", this.lp.address);
 
             // Give Alice enough LP tokens
             await this.lp.setBalance(this.alice.address, "1000000000000000000000"); // 1000 tokens
@@ -423,6 +423,53 @@ describe("xELONChef", function() {
 
             // Verify lastRewardBlock still updated (important!)
             expect(poolAfter.lastRewardBlock).to.be.gt(poolBefore.lastRewardBlock);
+        });
+
+        it("[L-03] should force pool updates when changing allocation after startBlock", async function() {
+            // 100 per block farming rate starting at block 600
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "600");
+            await this.chef.deployed();
+
+            this.xelon = await this.xELONToken.deploy(this.chef.address);
+            await this.xelon.deployed();
+
+            await this.chef.setXelon(this.xelon.address);
+            await this.xelon.grantRole(MINTER_ROLE, this.chef.address);
+
+            // Create second LP token for Pool B early (before staking starts)
+            this.lp2 = await this.ERC20Mock.deploy("LP2Token", "LP2", "10000000000");
+            await this.lp2.deployed();
+
+            // Add Pool A with 100 allocPoint (100% of rewards)
+            await this.chef.add("100", this.lp.address);
+
+            // Give Alice LP tokens and stake
+            await this.lp.setBalance(this.alice.address, "1000");
+            await this.lp.connect(this.alice).approve(this.chef.address, "1000");
+
+            await time.advanceBlockTo("609");
+            await this.chef.connect(this.alice).deposit(0, "1000"); // block 610
+
+            // Alice stakes from block 610-620 (10 blocks)
+            // Should earn 100 * 10 = 1000 xELON (100% of 100 per block)
+            await time.advanceBlockTo("619");
+
+            // Now admin adds Pool B at block 620
+            // With the fix, this will call massUpdatePools() first,
+            // properly accounting for blocks 610-620 at 100% allocation
+            await this.chef.add("100", this.lp2.address); // block 620
+
+            // When Alice withdraws at block 621, she should receive:
+            // - Rewards from blocks 610-620 (calculated during add): 10 * 100 * 100% = 1000
+            // - Rewards from block 621 (during withdraw): 1 * 100 * 50% = 50
+            // Total: 1050
+            await this.chef.connect(this.alice).withdraw(0, "1000"); // block 621
+
+            const aliceBalance = await this.xelon.balanceOf(this.alice.address);
+
+            // Before fix: Alice would get ~500-600 (all blocks calculated with wrong allocation)
+            // After fix: Alice gets 1050 (past blocks at 100%, current block at 50%)
+            expect(aliceBalance).to.equal("1050");
         });
     });
 });

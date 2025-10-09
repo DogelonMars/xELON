@@ -111,14 +111,16 @@ contract xELONChef is Ownable, ReentrancyGuard {
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function add(
         uint256 _allocPoint,
-        IERC20 _lpToken,
-        bool _withUpdate
+        IERC20 _lpToken
     ) public onlyOwner nonReentrant {
         require((address(_lpToken) == DOGELON && poolInfo.length == 0) || (address(_lpToken) != DOGELON && poolInfo.length != 0), "Can only add Dogelon as a pool once!");
-        emit PoolAdded(address(_lpToken), msg.sender);
-        if (_withUpdate) {
+
+        // Always update all pools if we're past startBlock and pools exist
+        if (block.number > startBlock && poolInfo.length > 0) {
             massUpdatePools();
         }
+
+        emit PoolAdded(address(_lpToken), msg.sender);
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint + _allocPoint;
@@ -135,13 +137,15 @@ contract xELONChef is Ownable, ReentrancyGuard {
     // Update the given pool's xELON allocation point. Can only be called by the owner.
     function set(
         uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
+        uint256 _allocPoint
     ) public onlyOwner nonReentrant {
         require(_pid < poolInfo.length, "Specified _pid does not exist");
-        if (_withUpdate) {
+
+        // Always update all pools if we're past startBlock
+        if (block.number > startBlock) {
             massUpdatePools();
         }
+
         uint256 poolAllocPoints = poolInfo[_pid].allocPoint;
         emit PoolSet(_pid, msg.sender, totalAllocPoint, poolAllocPoints, _allocPoint);
         totalAllocPoint = totalAllocPoint - poolAllocPoints + _allocPoint;
