@@ -53,7 +53,7 @@ contract xELONChef is Ownable, ReentrancyGuard {
     // The xELON TOKEN!
     xELONToken public xelon;
     // Dogelon Mars token address
-    address public constant DOGELON = 0x761D38e5ddf6ccf6Cf7c55759d5210750B5D60F3;
+    address public immutable DOGELON;
     // xELON tokens created per block.
     uint256 public xelonPerBlock;
     // Info of each pool.

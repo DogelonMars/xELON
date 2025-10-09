@@ -17,7 +17,7 @@ describe("xELONChef", function() {
 
     it("should set correct state variables", async function() {
         // deploy chef
-        this.chef = await this.xELONChef.deploy("1000", "0");
+        this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "1000", "0");
         console.log('this.chef:', this.chef)
         await this.chef.deployed();
 
@@ -52,7 +52,7 @@ describe("xELONChef", function() {
 
         it("should allow emergency withdraw", async function() {
             // 100 per block farming rate starting at block 100 with bonus until block 1000
-            this.chef = await this.xELONChef.deploy("100", "1");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "1");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -82,7 +82,7 @@ describe("xELONChef", function() {
         it("should give out xELONs only after farming time", async function() {
             // 100 per block farming rate starting at block 88 with bonus until block 1000
             // await time.advanceBlockTo("88");
-            this.chef = await this.xELONChef.deploy("100", "88");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "88");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -131,7 +131,7 @@ describe("xELONChef", function() {
 
         it("should not distribute xELONs if no one deposits", async function() {
             // 100 per block farming rate starting at block 200 with bonus until block 1000
-            this.chef = await this.xELONChef.deploy("100", "200");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "200");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -166,7 +166,7 @@ describe("xELONChef", function() {
 
         it("should distribute xELONs properly for each staker", async function() {
             // 100 per block farming rate starting at block 300 with bonus until block 1000
-            this.chef = await this.xELONChef.deploy("100", "300");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "300");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -233,7 +233,7 @@ describe("xELONChef", function() {
 
         it("should give proper xELONs allocation to each pool", async function() {
             // 100 per block farming rate starting at block 400 with bonus until block 1000
-            this.chef = await this.xELONChef.deploy("100", "400");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "400");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -266,7 +266,7 @@ describe("xELONChef", function() {
 
         it("should return the correct number of pools", async function() {
             // 100 per block farming rate starting at block 100 with bonus until block 1000
-            this.chef = await this.xELONChef.deploy("100", "100");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "100");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -286,7 +286,7 @@ describe("xELONChef", function() {
 
         it("should add/update/track the pools allocation points", async function() {
             // 100 per block farming rate starting at block 100 with bonus until block 1000
-            this.chef = await this.xELONChef.deploy("100", "100");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "100");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -312,7 +312,7 @@ describe("xELONChef", function() {
 
         it("[H-01] should allow multiple LP tokens to be added (DOGELON first, then others)", async function() {
             // 100 per block farming rate starting at block 100
-            this.chef = await this.xELONChef.deploy("100", "100");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "100");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -347,7 +347,7 @@ describe("xELONChef", function() {
 
         it("[H-01] should enforce DOGELON as first pool only", async function() {
             // 100 per block farming rate starting at block 100
-            this.chef = await this.xELONChef.deploy("100", "100");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "100", "100");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
@@ -375,7 +375,7 @@ describe("xELONChef", function() {
 
         it("[M-01] should prevent reward precision loss by not minting when increment is zero", async function() {
             // Very small reward rate: 1 wei per block
-            this.chef = await this.xELONChef.deploy("1", "500");
+            this.chef = await this.xELONChef.deploy(this.elonTokenAddress, "1", "500");
             await this.chef.deployed();
 
             this.xelon = await this.xELONToken.deploy(this.chef.address);
