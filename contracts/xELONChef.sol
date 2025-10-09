@@ -88,9 +88,12 @@ contract xELONChef is Ownable, ReentrancyGuard {
     );
 
     constructor(
+        address _dogelon,
         uint256 _xelonPerBlock,
         uint256 _startBlock
-    ) public {
+    ) {
+        require(_dogelon != address(0), "DOGELON address cannot be zero");
+        DOGELON = _dogelon;
         xelonPerBlock = _xelonPerBlock;
         startBlock = _startBlock;
     }
