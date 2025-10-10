@@ -417,8 +417,8 @@ describe("xELONChef", function() {
             // Verify accXelonPerShare didn't change
             expect(poolAfter.accXelonPerShare).to.equal(poolBefore.accXelonPerShare);
 
-            // Verify lastRewardBlock still updated (important!)
-            expect(poolAfter.lastRewardBlock).to.be.gt(poolBefore.lastRewardBlock);
+            // Verify lastRewardBlock did NOT update (allows blocks to accumulate)
+            expect(poolAfter.lastRewardBlock).to.equal(poolBefore.lastRewardBlock);
         });
 
         it("[L-03] should force pool updates when changing allocation after startBlock", async function() {

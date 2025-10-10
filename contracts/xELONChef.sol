@@ -212,9 +212,8 @@ contract xELONChef is Ownable, ReentrancyGuard {
             xelon.mint(address(this), xelonReward);
             emit PoolUpdated(_pid, multiplier, xelonReward, pool.accXelonPerShare, lpSupply);
             pool.accXelonPerShare = pool.accXelonPerShare + accXelonIncrease;
+            pool.lastRewardBlock = block.number;
         }
-
-        pool.lastRewardBlock = block.number;
     }
 
     function updatePool(uint256 _pid) public nonReentrant {
