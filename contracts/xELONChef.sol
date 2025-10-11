@@ -118,6 +118,10 @@ contract xELONChef is Ownable, ReentrancyGuard {
         // Always update all pools if we're past startBlock and pools exist
         if (block.number > startBlock && poolInfo.length > 0) {
             massUpdatePools();
+            // Force update lastRewardBlock to prevent incorrect rewards with new allocPoint
+            for (uint256 i = 0; i < poolInfo.length; i++) {
+                _forceUpdateLastRewardBlock(i);
+            }
         }
 
         emit PoolAdded(address(_lpToken), msg.sender);
@@ -144,6 +148,10 @@ contract xELONChef is Ownable, ReentrancyGuard {
         // Always update all pools if we're past startBlock
         if (block.number > startBlock) {
             massUpdatePools();
+            // Force update lastRewardBlock to prevent incorrect rewards with new allocPoint
+            for (uint256 i = 0; i < poolInfo.length; i++) {
+                _forceUpdateLastRewardBlock(i);
+            }
         }
 
         uint256 poolAllocPoints = poolInfo[_pid].allocPoint;
@@ -214,6 +222,10 @@ contract xELONChef is Ownable, ReentrancyGuard {
             pool.accXelonPerShare = pool.accXelonPerShare + accXelonIncrease;
             pool.lastRewardBlock = block.number;
         }
+    }
+
+    function _forceUpdateLastRewardBlock(uint256 _pid) internal {
+        poolInfo[_pid].lastRewardBlock = block.number;
     }
 
     function updatePool(uint256 _pid) public nonReentrant {
